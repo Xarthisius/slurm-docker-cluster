@@ -1,28 +1,36 @@
-FROM rockylinux:8
+FROM rockylinux:9
 
-LABEL org.opencontainers.image.source="https://github.com/giovtorres/slurm-docker-cluster" \
+LABEL org.opencontainers.image.source="https://github.com/xarthisius/slurm-docker-cluster" \
       org.opencontainers.image.title="slurm-docker-cluster" \
-      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 8" \
+      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 9" \
       org.label-schema.docker.cmd="docker-compose up -d" \
-      maintainer="Giovanni Torres"
+      maintainer="Kacper Kowalik"
 
 RUN set -ex \
     && yum makecache \
     && yum -y update \
-    && yum -y install dnf-plugins-core \
-    && yum config-manager --set-enabled powertools \
+    && yum -y install dnf-plugins-core epel-release \
+    && yum config-manager --set-enabled crb \
     && yum -y install \
        wget \
+       bc \
        bzip2 \
        perl \
        gcc \
        gcc-c++\
+       clang \
        git \
        gnupg \
        make \
        munge \
        munge-devel \
+       elfutils-libelf-devel \
+       flex \
+       libcurl-devel \
+       libuuid-devel \
+       Lmod \
        python3-devel \
+       python3-mysqlclient \
        python3-pip \
        python3 \
        mariadb-server \
@@ -35,7 +43,7 @@ RUN set -ex \
     && yum clean all \
     && rm -rf /var/cache/yum
 
-RUN alternatives --set python /usr/bin/python3
+# RUN alternatives --set python /usr/bin/python3
 
 RUN pip3 install Cython pytest
 
@@ -49,7 +57,8 @@ RUN set -ex \
     && gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu \
     && rm -rf "${GNUPGHOME}" /usr/local/bin/gosu.asc \
     && chmod +x /usr/local/bin/gosu \
-    && gosu nobody true
+    && gosu nobody true \
+    && /bin/true
 
 ARG SLURM_TAG
 
@@ -91,7 +100,6 @@ COPY slurmdbd.conf /etc/slurm/slurmdbd.conf
 RUN set -x \
     && chown slurm:slurm /etc/slurm/slurmdbd.conf \
     && chmod 600 /etc/slurm/slurmdbd.conf
-
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
