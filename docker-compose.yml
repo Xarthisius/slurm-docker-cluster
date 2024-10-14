@@ -12,9 +12,9 @@ services:
       - var_lib_mysql:/var/lib/mysql
     networks:
       - slurm-network
-
+  
   slurmdbd:
-    image: slurm-docker-cluster:${IMAGE_TAG}
+    image: xarthisius/slurm-xalt:${IMAGE_TAG}
     build:
       context: .
       args:
@@ -34,7 +34,7 @@ services:
       - slurm-network
 
   slurmctld:
-    image: slurm-docker-cluster:${IMAGE_TAG}
+    image: xarthisius/slurm-xalt:${IMAGE_TAG}
     command: ["slurmctld"]
     container_name: slurmctld
     hostname: slurmctld
@@ -43,6 +43,7 @@ services:
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - var_log_slurm:/var/log/slurm
+      - home_dummy:/home/dummy
     expose:
       - "6817"
     depends_on:
@@ -51,7 +52,7 @@ services:
       - slurm-network
 
   c1:
-    image: slurm-docker-cluster:${IMAGE_TAG}
+    image: xarthisius/slurm-xalt:${IMAGE_TAG}
     command: ["slurmd"]
     hostname: c1
     container_name: c1
@@ -60,6 +61,7 @@ services:
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - var_log_slurm:/var/log/slurm
+      - home_dummy:/home/dummy
     expose:
       - "6818"
     depends_on:
@@ -68,7 +70,7 @@ services:
       - slurm-network
 
   c2:
-    image: slurm-docker-cluster:${IMAGE_TAG}
+    image: xarthisius/slurm-xalt:${IMAGE_TAG}
     command: ["slurmd"]
     hostname: c2
     container_name: c2
@@ -77,6 +79,7 @@ services:
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - var_log_slurm:/var/log/slurm
+      - home_dummy:/home/dummy
     expose:
       - "6818"
     depends_on:
@@ -85,10 +88,12 @@ services:
       - slurm-network
 
 volumes:
+  home_dummy:
   etc_munge:
   etc_slurm:
   slurm_jobdir:
   var_lib_mysql:
+  var_lib_xaltdb:
   var_log_slurm:
 
 networks:

@@ -1,0 +1,85 @@
+ARG IMAGE_TAG=24.05.3
+FROM xarthisius/slurm-docker-cluster:${IMAGE_TAG}
+
+# add default user
+RUN set -ex \
+    && useradd -m -s /bin/bash dummy
+
+# Install XALT
+ARG XALT_VERSION=3.0.3
+COPY ./xalt_config.py /opt/apps/xalt/xalt_config.py
+RUN set -ex \
+    && cd /tmp \
+    && curl -LJO https://github.com/xalt/xalt/archive/refs/tags/xalt-${XALT_VERSION}.tar.gz \
+    && tar -xf xalt-xalt-${XALT_VERSION}.tar.gz \
+    && cd xalt-xalt-${XALT_VERSION} \
+    && ./configure --prefix=/opt/apps \
+       --with-syshostConfig=hardcode:local \
+       --with-transmission=file \
+       --with-MySQL=no \
+       --with-config=/opt/apps/xalt/xalt_config.py \
+    && make install \
+    && rm -rf /tmp/xalt-xalt-${XALT_VERSION}*
+
+# install python tro-utils
+RUN pip install --no-cache-dir tro-utils
+
+# install Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# install SLURM XALT plugin
+RUN pushd /tmp \
+  && git clone https://github.com/transparency-certified/spank-tro.git \
+  && cd spank-tro \
+  && $HOME/.cargo/bin/cargo build --release \
+  && ls target/release/* \
+  && cp target/release/libspank_tro.so /usr/lib64/slurm/spank_tro.so \
+  && popd \
+  && rm -rf /tmp/spank-tro
+
+RUN <<EOF cat >> /tmp/mock_gpg
+     %echo Generating a basic OpenPGP key
+     Key-Type: DSA
+     Key-Length: 1024
+     Subkey-Type: ELG-E
+     Subkey-Length: 1024
+     Name-Real: Joe Tester
+     Name-Comment: with stupid passphrase
+     Name-Email: joe@foo.bar
+     Expire-Date: 0
+     Passphrase: abc123abc
+     # Do a commit here, so that we can later print "done" :-)
+     %commit
+     %echo done
+EOF
+
+RUN mkdir /etc/slurm/gpg \
+  && gpg --homedir=/etc/slurm/gpg --batch --generate-key /tmp/mock_gpg \
+  && gpg --homedir=/etc/slurm/gpg --with-colons --fingerprint | awk -F: '$1 == "fpr" {print $10;}' | head -n1 > /etc/slurm/gpg/fingerprint \
+  && echo "optional /usr/lib64/slurm/spank_tro.so xalt_dir=/opt/apps/xalt/xalt gpg_home=/etc/slurm/gpg gpg_fingerprint=$(cat /etc/slurm/gpg/fingerprint) gpg_passphrase=abc123abc trs_caps=/etc/slurm/trs.jsonld tro_utils=/usr/local/bin/tro-utils" > /etc/slurm/plugstack.conf
+
+COPY trs.jsonld /etc/slurm/trs.jsonld
+
+# Some preparation for the user, can be removed
+USER dummy
+WORKDIR /home/dummy/example_job
+RUN <<EOF cat > hello.c
+#include <stdio.h>
+
+int main() {
+    printf("hello world\n");
+    return 0;
+}
+EOF
+RUN <<EOF cat > submit.slurm
+#!/bin/bash
+#SBATCH --job-name=test
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=00:00:30
+
+./hello
+EOF
+
+RUN gcc -fPIC -o hello hello.c
+USER root

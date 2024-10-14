@@ -1,0 +1,18 @@
+{
+ "rdfs:comment": "TRS that can monitor netowork accesses or provide Internet isolation",
+ "trov:hasCapability": [
+   {
+     "@id": "trs/capability/1",
+     "@type": "trov:CanRecordInternetAccess"
+   },
+   {
+     "@id": "trs/capability/2",
+     "@type": "trov:CanProvideInternetIsolation"
+   }
+ ],
+ "trov:owner": "Kacper Kowalik",
+ "trov:description": "My fancy SLURM cluster",
+ "trov:contact": "root@dev.null",
+ "trov:url": "http://127.0.0.1/",
+ "trov:name": "bazinga"
+}
