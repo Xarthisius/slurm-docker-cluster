@@ -1,4 +1,34 @@
-# Slurm Docker Cluster
+# Testbed for TRACE SPANK plugin
+
+## Getting started
+
+To get up and running with Slurm in Docker, make sure you have the following tools installed:
+
+- **[Docker](https://docs.docker.com/get-docker/)**
+- **[Docker Compose](https://docs.docker.com/compose/install/)**
+
+Clone the repository:
+
+```bash
+git clone https://github.com/transparency-certified/slurm-docker-cluster.git
+cd slurm-docker-cluster
+```
+
+Run `make` to build the images and start the cluster:
+
+```bash
+make
+```
+
+Read the [original documentation](#slurm-docker-cluster-orignal-docs) for more information on how to interact with the cluster.
+
+To stop the cluster (destroys all volumes):
+
+```bash
+make clean
+```
+
+# Slurm Docker Cluster (ORIGNAL DOCS)
 
 **Slurm Docker Cluster** is a multi-container Slurm cluster designed for rapid
 deployment using Docker Compose. This repository simplifies the process of
